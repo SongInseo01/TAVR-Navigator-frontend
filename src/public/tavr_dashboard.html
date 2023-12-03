@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TAVR - Navigator - Dashboard</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+        }
+
+        .dashboard {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+            background-color: #333;
+            color: #ecf0f1;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+        }
+
+        .sidebar {
+            width: 20%;
+            background-color: #34495e;
+            color: #ecf0f1;
+            /* More styles */
+        }
+
+        .main-panel {
+            width: 80%;
+            padding: 20px;
+            /* More styles */
+        }
+
+        .patient-info {
+            /* Adjusted styles */
+            flex: 0 0 20%;
+            /* Fixed width for the sidebar */
+            background-color: rgb(46, 200, 228);
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 4px;
+        }
+
+        .right-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            /* Allow this container to grow and take up the remaining space */
+        }
+
+        .center-panel {
+            display: flex;
+            flex-direction: row;
+            flex: 1;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .under-panel {
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 20px;
+            position: bottom;
+        }
+
+        .baseline-info,
+        .disease-injury,
+        .vital-data,
+        .valve,
+        .ecg-monitor {
+            /* Card styles */
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 12px;
+            flex: 1;
+            /* Allow flex children to grow and take up equal space */
+        }
+
+        .in-dashboard {
+            background-color: #fff;
+            color: rgb(0, 0, 0);
+        }
+
+
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        td {
+            padding: 8px;
+            border: 1px solid #ccc;
+        }
+
+        /* Add more specific styles for elements within .patient-info, .ecg-monitor, .risk-analysis */
+    </style>
+</head>
+
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>TAVR - Navigator</h1>
+            <div class="user-info">
+                <span># USER-NAME</span>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="patient-info">
+                <h1 id="patientId">Patient ID: Loading...</h1>
+                <h3 id="patientName">Name: Loading...</h3>
+                <h3 id="patientAge">Age: Loading...</h3>
+                <h3 id="patientGender">Gender: Loading...</h3>
+                <h3 id="patientTavrDate">TAVR-Date: Loading...</h3>
+
+                <hr>
+
+                <div class="in-dashboard">
+                    <h2>Dash Board</h2>
+                    <h4>Complication Prediction</h4>
+                    <p><a href="tavr_ppi.html">PPI</a></p>
+                </div>
+            </div>
+            <div class="right-content">
+                <div class="center-panel">
+                    <div class="baseline-info">
+                        <h3>Baseline Information</h3>
+                        <h4 id="rbbb">rbbb: Loading...</h4>
+                        <h4 id="lbbb">lbbb: Loading...</h4>
+                        <h4 id="pr_interval">pr_interval: Loading...</h4>
+                        <h4 id="first_av_block">first_av_block: Loading...</h4>
+                        <h4 id="qrs_interval">qrs_interval: Loading...</h4>
+                        <h4 id="qrs_abnormal">qrs_abnormal: Loading...</h4>
+
+                    </div>
+                    <div class="disease-injury">
+                        <h3>Disease Injury</h3>
+                        <h4 id="dm">dm: Loading...</h4>
+                        <h4 id="htn">htn: Loading...</h4>
+                        <h4 id="ckd">ckd: Loading...</h4>
+
+                    </div>
+                    <div class="vital-data">
+                        <h3>Vital Data = (Lab Data)</h3>
+                        <h4 id="hgb">hgb: Loading...</h4>
+                        <h4 id="hba1c">hba1c: Loading...</h4>
+                        <h4 id="ast">ast: Loading...</h4>
+                        <h4 id="alt">alt: Loading...</h4>
+                        <h4 id="creatinine">creatinine: Loading...</h4>
+                        <h4 id="nt_pro_bnp">nt_pro_bnp: Loading...</h4>
+
+                    </div>
+                    <div class="valve">
+                        <h3>Valve</h3>
+                        <h4 id="valve_model">valve_model: Loading...</h4>
+                        <h4 id="valve_size">valve_size: Loading...</h4>
+                        <h4 id="valve_type">valve_type: Loading...</h4>
+
+                    </div>
+
+                </div>
+
+                <div class="under-panel">
+                    <div class="ecg-monitor">
+                        <h3>Ecg monitor</h3>
+                    </div>
+                </div>
+            </div>
+
+
+
+
+        </div>
+    </div>
+</body>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var selectedPatientId = localStorage.getItem('selectedPatientId');
+        if (selectedPatientId) {
+            fetchPatientDetails(selectedPatientId);
+        } else {
+            console.error('No patient selected');
+            // 여기에 선택된 환자가 없을 때의 로직을 추가하세요
+        }
+    });
+
+
+
+    function fetchConfig() {
+        fetch('/api/config/id')
+            .then(response => response.json())
+            .then(config => {
+                fetchPatientData(config.RWDDB_ID_URL);
+            })
+            .catch(error => console.error('Error fetching config:', error));
+    }
+
+
+    function fetchPatientDetails(patientId) {
+
+        var patientIdStr = String(patientId);
+        // 예시: 서버로부터 환자 정보를 가져오는 API 요청
+        fetch('http://210.102.181.208:40010/patient/crf?id=' + patientId)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // 서버로부터 받은 데이터를 사용하여 환자 정보를 업데이트
+                document.getElementById('patientId').textContent = 'Patient ID: ' + (data.data.subject_no ?? 'Unavailable');
+                document.getElementById('patientName').textContent = 'Name: ' + (data.data.patient_name ?? 'Unavailable');
+                document.getElementById('patientAge').textContent = 'Age: ' + (data.data.ClinicalData?.age ?? 'Unavailable');
+                document.getElementById('patientGender').textContent = 'Gender: ' + (data.data.ClinicalData?.sex ?? 'Unavailable');
+                document.getElementById('patientTavrDate').textContent = 'TAVR-Date: ' + (formatDate(data.data.tavr_date) ?? 'Unavailable');
+
+                document.getElementById('rbbb').textContent = 'rbbb: ' + (data.data.BaselineEkg.rbbb ?? 'Unavailable');
+                document.getElementById('lbbb').textContent = 'lbbb: ' + (data.data.BaselineEkg.lbbb ?? 'Unavailable');
+                document.getElementById('pr_interval').textContent = 'pr_interval: ' + (data.data.BaselineEkg.pr_interval ?? 'Unavailable');
+                document.getElementById('first_av_block').textContent = 'first_av_block: ' + (data.data.BaselineEkg.first_av_block ?? 'Unavailable');
+                document.getElementById('qrs_interval').textContent = 'qrs_interval: ' + (data.data.BaselineEkg.qrs_interval ?? 'Unavailable');
+                document.getElementById('qrs_abnormal').textContent = 'qrs_abnormal: ' + (data.data.BaselineEkg.qrs_abnormal ?? 'Unavailable');
+
+                document.getElementById('dm').textContent = 'dm: ' + (data.data.ClinicalData.dm ?? 'Unavailable');
+                document.getElementById('htn').textContent = 'htn: ' + (data.data.ClinicalData.htn ?? 'Unavailable');
+                document.getElementById('ckd').textContent = 'ckd: ' + (data.data.ClinicalData.ckd ?? 'Unavailable');
+
+                document.getElementById('hgb').textContent = 'hgb: ' + (data.data.LabData.hgb ?? 'Unavailable');
+                document.getElementById('hba1c').textContent = 'hba1c: ' + (data.data.LabData.hba1c ?? 'Unavailable');
+                document.getElementById('ast').textContent = 'ast: ' + (data.data.LabData.ast ?? 'Unavailable');
+                document.getElementById('alt').textContent = 'alt: ' + (data.data.LabData.alt ?? 'Unavailable');
+                document.getElementById('creatinine').textContent = 'creatinine: ' + (data.data.LabData.creatinine ?? 'Unavailable');
+                document.getElementById('nt_pro_bnp').textContent = 'nt_pro_bnp: ' + (data.data.LabData.nt_pro_bnp ?? 'Unavailable');
+
+                document.getElementById('valve_model').textContent = 'valve_model: ' + (data.data.valve_model ?? 'Unavailable');
+                document.getElementById('valve_size').textContent = 'valve_size: ' + (data.data.valve_size ?? 'Unavailable');
+                document.getElementById('valve_type').textContent = 'valve_type: ' + (data.data.valve_type ?? 'Unavailable');
+            })
+            .catch(error => {
+                console.error('Error fetching patient details:', error);
+                // 오류 발생 시 처리 로직
+            });
+    }
+
+    function formatDate(dateString) {
+        var date = new Date(dateString);
+        return date.toLocaleDateString(); // 예: "mm/dd/yyyy" 형식으로 변환
+    }
+</script>
+
+</html>

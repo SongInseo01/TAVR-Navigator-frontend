@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TAVR - Navigator - Dashboard</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+        }
+
+        .dashboard {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+            background-color: #333;
+            color: #ecf0f1;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+        }
+
+        .sidebar {
+            width: 20%;
+            background-color: #34495e;
+            color: #ecf0f1;
+            /* More styles */
+        }
+
+        .main-panel {
+            width: 80%;
+            padding: 20px;
+            /* More styles */
+        }
+
+        .patient-info {
+            /* Adjusted styles */
+            flex: 0 0 20%;
+            /* Fixed width for the sidebar */
+            background-color: rgb(46, 200, 228);
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 4px;
+        }
+
+        .right-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            /* Allow this container to grow and take up the remaining space */
+        }
+
+        .center-panel {
+            display: flex;
+            flex-direction: row;
+            flex: 1;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .under-panel {
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 20px;
+            position: bottom;
+        }
+
+        .prediction,
+        .history {
+            /* Card styles */
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 12px;
+            flex: 1;
+            /* Allow flex children to grow and take up equal space */
+        }
+
+        .in-dashboard {
+            background-color: #fff;
+            color: rgb(0, 0, 0);
+        }
+
+
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        td {
+            padding: 8px;
+            border: 1px solid #ccc;
+        }
+
+        /* Add more specific styles for elements within .patient-info, .ecg-monitor, .risk-analysis */
+    </style>
+</head>
+
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>TAVR - Navigator</h1>
+            <div class="user-info">
+                <span># USER-NAME</span>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="patient-info">
+                <h1 id="patientId">Patient ID: Loading...</h1>
+                <h3 id="patientName">Name: Loading...</h3>
+                <h3 id="patientAge">Age: Loading...</h3>
+                <h3 id="patientGender">Gender: Loading...</h3>
+                <h3 id="patientTavrDate">TAVR-Date: Loading...</h3>
+
+                <hr>
+
+                <div class="in-dashboard">
+                    <h2>Dash Board</h2>
+                    <h4>Complication Prediction</h4>
+                    <p>PPI</p>
+                </div>
+            </div>
+            <div class="right-content">
+                <div class="center-panel">
+                    <div class="prediction">
+                        <h3>Predictions</h3>
+                        <h4 id="prediction">PPI prediction: Loading...</h4>
+
+                    </div>
+
+                    <div class="history" , id="history">
+                        <h3>History</h3>
+                        <table>
+                            <tr>
+                                <th>PPI: 0</th>
+                                <th>Date: 2023. 12. 11</th>
+
+                            </tr>
+                            <tr>
+                                <th>PPI: 1</th>
+                                <th>Date: 2023. 12. 12</th>
+
+                            </tr>
+                        </table>
+
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</body>
+
+<script>
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var selectedPatientId = localStorage.getItem('selectedPatientId');
+        if (selectedPatientId) {
+            fetchPatientDetails(selectedPatientId);
+        } else {
+            console.error('No patient selected');
+            // 여기에 선택된 환자가 없을 때의 로직을 추가하세요
+        }
+    });
+
+    function fetchPatientDetails(patientId) {
+
+        var patientIdStr = String(patientId);
+        // 예시: 서버로부터 환자 정보를 가져오는 API 요청
+        fetch('http://210.102.181.208:40010/patient/crf?id=' + patientId)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // 서버로부터 받은 데이터를 사용하여 환자 정보를 업데이트
+                document.getElementById('patientId').textContent = 'Patient ID: ' + (data.data.subject_no ?? 'Unavailable');
+                document.getElementById('patientName').textContent = 'Name: ' + (data.data.patient_name ?? 'Unavailable');
+                document.getElementById('patientAge').textContent = 'Age: ' + (data.data.ClinicalData?.age ?? 'Unavailable');
+                document.getElementById('patientGender').textContent = 'Gender: ' + (data.data.ClinicalData?.sex ?? 'Unavailable');
+                document.getElementById('patientTavrDate').textContent = 'TAVR-Date: ' + (formatDate(data.data.tavr_date) ?? 'Unavailable');
+            })
+            .catch(error => {
+                console.error('Error fetching patient details:', error);
+                // 오류 발생 시 처리 로직
+            });
+    }
+
+    function formatDate(dateString) {
+        var date = new Date(dateString);
+        return date.toLocaleDateString(); // 예: "mm/dd/yyyy" 형식으로 변환
+    }
+
+</script>
+
+</html>

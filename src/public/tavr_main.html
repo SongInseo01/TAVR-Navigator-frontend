@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TAVR - Navigator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .navbar {
+            background-color: #333;
+            padding: 10px;
+            color: white;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .patient-list {
+            width: 60%;
+            /* 이미지에 기반한 적절한 너비 조정 */
+            overflow-y: auto;
+            /* 테이블이 너무 길 경우 스크롤바 추가 */
+        }
+
+        .patient-info-container {
+            width: 35%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            width: 40%;
+            /* 이미지에 기반한 적절한 너비 조정 */
+            background-color: #fff;
+            /* 배경색 설정 */
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            /* 그림자 효과 추가 */
+            margin-left: 20px;
+            /* 왼쪽 패널과의 간격 */
+        }
+
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .predictions {
+            width: 35%;
+        }
+
+        .card {
+            background-color: #f9f9f9;
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+
+        .selected {
+            background-color: #e7f3ff;
+            /* 선택된 행에 적용할 색상 */
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="navbar">
+        <h1>TAVR - Navigator</h1>
+        <input type="text" id="searchBar" onkeyup="searchPatients()" placeholder="Search for names..">
+    </div>
+
+    <div class="container">
+        <!-- Patient list on the left -->
+        <div class="patient-list">
+            <table id="patientTable">
+                <tr>
+                    <th>Patient-ID</th>
+                    <th>Name</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>TAVR-Date</th>
+                </tr>
+                <!-- 환자 정보 행; 클릭 이벤트를 위한 onclick 속성 추가 -->
+            </table>
+        </div>
+
+        <!-- Right panel for patient details and complications -->
+        <div class="right-panel">
+            <!-- Patient details section -->
+            <div class="patient-details" id="patientDetails">
+                <!-- Details will be populated here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    </div>
+
+    <div class="patient-details" id="patientDetails">
+        <!-- 세부 정보가 여기에 표시됩니다 -->
+    </div>
+
+
+    </div>
+
+    <div class="navigation-button">
+        <button id="navigateButton">Navigate</button>
+    </div>
+
+    <script>
+
+
+        var selectedPatientId = null;
+
+        function searchPatients() {
+            // Declare variables
+            var input, filter, table, tr, td, i, txtValue;
+            input = document.getElementById('searchBar');
+            filter = input.value.toUpperCase();
+            table = document.getElementsByTagName('table')[0];
+            tr = table.getElementsByTagName('tr');
+
+            // Loop through all table rows, and hide those who don't match the search query
+            for (i = 1; i < tr.length; i++) {
+                td = tr[i].getElementsByTagName('td')[1]; // Get the second 'td' element (name column)
+                if (td) {
+                    txtValue = td.textContent || td.innerText;
+                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }
+            }
+        }
+
+        function showDetails(row) {
+            // 환자 정보를 추출합니다.
+            var patientId = row.cells[0].innerText;
+            var name = row.cells[1].innerText;
+            var age = row.cells[2].innerText;
+            var gender = row.cells[3].innerText;
+            var tavrDate = row.cells[4].innerText;
+
+            var table = document.getElementById('patientTable');
+            for (var i = 0; i < table.rows.length; i++) {
+                table.rows[i].classList.remove('selected');
+            }
+            row.classList.add('selected');
+
+
+            // 세부 정보 섹션에 HTML 구조를 만들고 데이터를 삽입합니다.
+            var detailsHtml = `
+                <h3>${name}의 세부 정보</h3>
+                <p>Patient-ID: ${patientId}</p>
+                <p>Age: ${age}</p>
+                <p>Gender: ${gender}</p>
+                <p>TAVR-Date: ${tavrDate}</p>
+                <hr>
+            `;
+
+            // 세부 정보 섹션에 HTML을 설정합니다.
+            document.getElementById('patientDetails').innerHTML = detailsHtml;
+
+            selectedPatientId = patientId;
+        }
+
+        document.getElementById('navigateButton').addEventListener('click', function () {
+            if (selectedPatientId) {
+                localStorage.setItem('selectedPatientId', selectedPatientId);
+                window.location.href = 'tavr_dashboard.html';
+            } else {
+                alert('Please select a patient first.');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var RWDDB_URL = "http://210.102.181.208:40010/patient/list"
+            fetchPatientData(RWDDB_URL);
+        });
+
+        function fetchConfig() {
+            fetch('/api/config')
+                .then(response => response.json())
+                .then(config => {
+                    fetchPatientData(config.RWDDB_URL);
+                })
+                .catch(error => console.error('Error fetching config:', error));
+        }
+
+        function fetchPatientData(RWDDB_URL) {
+
+            fetch(RWDDB_URL)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success && data.data) {
+                        updatePatientTable(data.data);
+                    } else {
+                        console.error('Failed to load patient data');
+                    }
+                })
+                .catch(error => console.error('Error fetching patient data:', error));
+        }
+
+        function updatePatientTable(patients) {
+            const table = document.getElementById('patientTable');
+
+            // 기존 행(헤더를 제외한)을 제거
+            while (table.rows.length > 1) {
+                table.deleteRow(1);
+            }
+
+            // 새로운 행 추가
+            patients.forEach(patient => {
+                const row = table.insertRow();
+                row.setAttribute('onclick', 'showDetails(this)');
+
+                row.insertCell(0).textContent = patient.subject_no;
+                row.insertCell(1).textContent = patient.patient_name;
+                row.insertCell(2).textContent = patient.ClinicalData.age;
+                row.insertCell(3).textContent = patient.ClinicalData.sex;
+                row.insertCell(4).textContent = formatDate(patient.tavr_date);
+            });
+        }
+
+        function formatDate(dateString) {
+            var date = new Date(dateString);
+            return date.toLocaleDateString(); // 예: "mm/dd/yyyy" 형식으로 변환
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            fetchConfig();
+        });
+    </script>
+
+</body>
+
+</html>
