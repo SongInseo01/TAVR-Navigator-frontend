@@ -134,24 +134,21 @@
             <div class="right-content">
                 <div class="center-panel">
                     <div class="prediction">
-                        <h3>Predictions</h3>
-                        <h4 id="prediction">PPI prediction: Loading...</h4>
+                        <h2>Predictions</h2>
+                        <h4 id="prediction">Pacemaker prediction: Loading...</h4>
+
+                        <button id="gopred">Predict</button>
 
                     </div>
 
                     <div class="history" , id="history">
-                        <h3>History</h3>
-                        <table>
+                        <h2>History</h2>
+                        <table id="histtable">
                             <tr>
-                                <th>PPI: 0</th>
-                                <th>Date: 2023. 12. 11</th>
-
+                                <th>Predicted</th>
+                                <th>Date</th>
                             </tr>
-                            <tr>
-                                <th>PPI: 1</th>
-                                <th>Date: 2023. 12. 12</th>
 
-                            </tr>
                         </table>
 
                     </div>
@@ -198,11 +195,99 @@
                 console.error('Error fetching patient details:', error);
                 // 오류 발생 시 처리 로직
             });
-    }
 
-    function formatDate(dateString) {
-        var date = new Date(dateString);
-        return date.toLocaleDateString(); // 예: "mm/dd/yyyy" 형식으로 변환
+        var predictButton = document.getElementById('gopred');
+
+        predictButton.addEventListener('click', function () {
+            var patientId = localStorage.getItem('selectedPatientId'); // 현재 선택된 환자 ID를 가져옵니다.
+
+            // 환자 ID가 있는 경우에만 요청을 보냅니다.
+            if (patientId) {
+                fetch('http://210.102.181.208:40010/prediction/ppi/model?model=1&id=' + patientId)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // 서버로부터 받은 데이터를 사용하여 환자 정보를 업데이트
+                        document.getElementById('prediction').textContent = 'Pacemaker prediction: ' + (data.data.Pacemaker_Prediction ?? 'Unavailable');
+                    })
+                    .catch(error => {
+                        console.error('Error fetching prediction:', error);
+                        // 오류 발생 시 처리 로직
+                    });
+            } else {
+                console.error('No patient selected');
+                // 선택된 환자가 없을 경우의 처리 로직
+            }
+        });
+
+        function fetchPatientDetails(patientId) {
+            fetch('http://210.102.181.208:40010/patient/crf?id=' + patientId)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // [환자 정보 업데이트 로직은 그대로 유지]
+                    // 예시로, 'patientId' 요소의 텍스트를 업데이트하는 로직
+                    document.getElementById('patientId').textContent = 'Patient ID: ' + (data.data.subject_no ?? 'Unavailable');
+                    // 이하 생략
+                })
+                .catch(error => {
+                    console.error('Error fetching patient details:', error);
+                    // 오류 발생 시 처리 로직
+                });
+
+            // History 테이블을 업데이트하기 위한 fetch 요청
+            fetch('http://210.102.181.208:40010/patient/crf?id=' + patientId)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    var table = document.getElementById('histtable');
+                    // Clear existing rows in the table, except the header
+                    while (table.rows.length > 1) {
+                        table.deleteRow(1);
+                    }
+
+                    // 데이터 구조를 확인하고, forEach 루프를 실행하기 전에 데이터가 배열인지 확인합니다.
+                    if (Array.isArray(data.data)) {
+                        // Iterate through the data array and add rows to the table
+                        data.data.forEach(item => {
+                            if (item.result && item.up_date) {
+                                var row = table.insertRow();
+                                var cell1 = row.insertCell(0);
+                                var cell2 = row.insertCell(1);
+                                cell1.textContent = item.result;
+                                // 날짜 형식이 올바른지 확인하고 포매팅합니다.
+                                try {
+                                    var date = new Date(item.up_date);
+                                    cell2.textContent = date.toLocaleDateString();
+                                } catch (e) {
+                                    console.error('Date formatting error:', e);
+                                    cell2.innerHTML = 'Date: Invalid date';
+                                }
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch Error:', error);
+                });
+        }
+
+        function formatDate(dateString) {
+            var date = new Date(dateString);
+            return date.toLocaleDateString(); // 예: "mm/dd/yyyy" 형식으로 변환
+        }
     }
 
 </script>
